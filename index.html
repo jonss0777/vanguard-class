@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Cat Access & Supervision Hub</title>
+    <title>Watcher Hub</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- FontAwesome for UX Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -13,61 +12,70 @@
         <!-- Header -->
         <header class="app-header">
             <div class="brand">
-                <i class="fa-solid fa-cat brand-icon"></i>
-                <h1>PawAccess <span>Smart Hub</span></h1>
+                <i class="fa-solid fa-shield-cat brand-icon"></i>
+                <h1>Watcher <span>Hub</span></h1>
             </div>
-            <button id="toggle-camera-btn" class="btn btn-secondary">
-                <i class="fa-solid fa-video"></i> Live Feed
-            </button>
+            <div id="connection-status" class="badge badge-success">
+                <i class="fa-solid fa-signal"></i> Connected
+            </div>
         </header>
-
-        <!-- System Presence & Access State Banner -->
-        <section class="status-card" id="status-card">
-            <div class="status-indicator">
-                <span class="dot" id="presence-dot"></span>
-                <span id="presence-text" class="status-title">Detecting Room Presence...</span>
-            </div>
-            <div class="mode-badge" id="mode-badge">
-                <i class="fa-solid fa-shield-halved"></i>
-                <span id="mode-text">System Initializing</span>
-            </div>
-            <div class="presence-toggle-wrapper">
-                <label for="presence-sim-toggle" class="toggle-label">Simulate Human Presence:</label>
-                <input type="checkbox" id="presence-sim-toggle" class="toggle-switch">
-            </div>
-        </section>
 
         <!-- Main Dashboard Grid -->
         <main class="dashboard-grid">
+            
+            <!-- Main Live Video Feed -->
+            <section class="card video-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2><i class="fa-solid fa-video"></i> Live Feed</h2>
+                        <span class="badge badge-danger" id="live-indicator"><i class="fa-solid fa-circle"></i> LIVE</span>
+                    </div>
+                    <!-- Reconnect Video Button -->
+                    <button id="reconnect-stream-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-rotate-right" id="reconnect-icon"></i>
+                        <span>Reconnect</span>
+                    </button>
+                </div>
+                <div class="video-container" style="position: relative; width: 100%; min-height: 280px; background-color: #000; border-radius: 8px; overflow: hidden;">
+                    <video id="webrtc-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain; display: block;"></video>
+                </div>
+                <div class="video-footer" style="margin-top: 8px;">
+                    <p id="camera-status-text" style="font-size: 0.85rem; color: #888;">Connecting to camera stream...</p>
+                </div>
+            </section>
+
             <!-- Hardware & Window Controls -->
             <section class="card control-card">
                 <h2><i class="fa-solid fa-sliders"></i> System Controls</h2>
                 
-                <div class="control-item">
+                <!-- Window State Control -->
+                <div class="control-item" style="margin-bottom: 20px;">
                     <div class="control-info">
-                        <h3>Window Mechanism</h3>
-                        <p id="window-status-desc">Window is currently closed</p>
+                        <h3>Window</h3>
+                        <p id="window-status-desc">Fetching state...</p>
                     </div>
-                    <div class="control-action">
-                        <span class="badge" id="window-state-badge">Locked</span>
+                    <div class="control-action" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                        <button id="toggle-window-btn" class="btn btn-secondary">
+                            <i class="fa-solid fa-spinner fa-spin" id="window-btn-icon"></i> 
+                            <span id="window-btn-text">Loading...</span>
+                        </button>
+                        <span class="badge" id="window-state-badge">...</span>
                     </div>
                 </div>
 
+                <!-- Smart Flap Rule Control -->
                 <div class="control-item">
                     <div class="control-info">
                         <h3>Smart Flap Rule</h3>
-                        <p id="flap-rule-desc">Loading rules...</p>
+                        <p id="flap-rule-desc">Fetching rules...</p>
                     </div>
-                    <div class="control-action">
-                        <span class="badge badge-info" id="flap-rule-badge">Inbound Only</span>
+                    <div class="control-action" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                        <button id="toggle-flap-btn" class="btn btn-secondary">
+                            <i class="fa-solid fa-spinner fa-spin" id="flap-btn-icon"></i> 
+                            <span id="flap-btn-text">Loading...</span>
+                        </button>
+                        <span class="badge badge-info" id="flap-rule-badge">...</span>
                     </div>
-                </div>
-
-                <!-- Notification Alert Simulated Trigger -->
-                <div class="simulation-actions">
-                    <button id="sim-cat-waiting-btn" class="btn btn-warning btn-block">
-                        <i class="fa-solid fa-bell"></i> Simulate Cat Waiting Outside
-                    </button>
                 </div>
             </section>
 
@@ -83,36 +91,16 @@
             </section>
         </main>
 
-        <!-- Live Camera Stream Modal -->
-        <div class="modal-overlay" id="camera-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class="fa-solid fa-video"></i> Live Window Camera</h3>
-                    <button class="close-modal-btn" id="close-modal-btn">&times;</button>
-                </div>
-                <div class="video-container">
-                    <div class="video-placeholder">
-                        <i class="fa-solid fa-cat video-cat-icon"></i>
-                        <p>Live Video Stream Active</p>
-                        <span class="live-tag"><i class="fa-solid fa-circle"></i> LIVE</span>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <p id="camera-status-text">Monitoring outside window area...</p>
-                </div>
-            </div>
-        </div>
-
         <!-- Toast Notification Alert -->
         <div class="toast-notification" id="toast-notification">
-            <i class="fa-solid fa-paw toast-icon"></i>
+            <i id="toast-icon" class="fa-solid fa-bell toast-icon"></i>
             <div class="toast-body">
-                <strong id="toast-title">Cat Detected!</strong>
-                <p id="toast-message">Your cat is outside the window trying to get in.</p>
+                <strong id="toast-title">Detection Alert</strong>
+                <p id="toast-message">New activity detected near window.</p>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

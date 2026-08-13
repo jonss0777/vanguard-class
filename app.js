@@ -1,128 +1,683 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // State Variables
-    let isHumanPresent = false;
-    let isWindowOpen = false;
+// import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    // DOM Elements
-    const presenceToggle = document.getElementById('presence-sim-toggle');
-    const statusCard = document.getElementById('status-card');
-    const presenceText = document.getElementById('presence-text');
-    const modeBadge = document.getElementById('mode-badge');
-    const modeText = document.getElementById('mode-text');
-    
-    const windowStateBadge = document.getElementById('window-state-badge');
-    const windowStatusDesc = document.getElementById('window-status-desc');
-    const flapRuleBadge = document.getElementById('flap-rule-badge');
-    const flapRuleDesc = document.getElementById('flap-rule-desc');
-    
-    const simCatWaitingBtn = document.getElementById('sim-cat-waiting-btn');
-    const toastNotification = document.getElementById('toast-notification');
-    const eventTimeline = document.getElementById('event-timeline');
-    const clearLogsBtn = document.getElementById('clear-logs-btn');
+// const SUPABASE_URL = 'https://fqvpzvwlkxdeqqkqkjnh.supabase.co';
+// const SUPABASE_KEY = 'sb_publishable_umgBNG0VuXTNTZAA9qfYbA_-wGYCeSk';
+// export const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const cameraModal = document.getElementById('camera-modal');
-    const toggleCameraBtn = document.getElementById('toggle-camera-btn');
-    const closeModalBtn = document.getElementById('close-modal-btn');
+// const WEBRTC_URL = 'http://13.221.52.248:8889/mystream/whep';
+// let peerConnection = null;
 
-    // Initialize System Default State (Absent)
-    updateSystemState(false);
+// // Track current states
+// let currentWindowState = 'locked';       // 'locked' | 'unlocked'
+// let currentFlapRule = 'inbound_only';    // 'inbound_only' | 'outbound_only' | 'two_way'
 
-    // Event Listener: Human Presence Simulation Toggle
-    presenceToggle.addEventListener('change', (e) => {
-        isHumanPresent = e.target.checked;
-        updateSystemState(isHumanPresent);
-    });
+// // Initialize Supabase Listeners & Data Fetch
+// async function initSupabase() {
+//     // 1. Fetch Latest System Configuration State
+//     try {
+//         const { data, error } = await db
+//             .from('system_config')
+//             .select('*')
+//             .eq('id', 1)
+//             .single();
 
-    // Master Logic Function
-    function updateSystemState(present) {
-        if (present) {
-            // State A: Human Present
-            statusCard.className = 'status-card present';
-            presenceText.textContent = 'Human Present in Room';
-            
-            modeBadge.className = 'mode-badge badge-success';
-            modeText.textContent = 'Unrestricted Supervision Mode';
+//         if (!error && data) {
+//             currentWindowState = data.window_state;
+//             currentFlapRule = data.flap_rule;
+//             renderUI();
+//         }
+//     } catch (err) {
+//         console.error("Failed to fetch system_config:", err);
+//     }
 
-            // Window automatically opens to let cat out/in
-            isWindowOpen = true;
-            windowStateBadge.className = 'badge badge-success';
-            windowStateBadge.textContent = 'Open';
-            windowStatusDesc.textContent = 'Window opened automatically for full indoor/outdoor access.';
+//     // 2. Fetch Initial History for Event Summary Timeline
+//     try {
+//         const { data: initialEvents, error: eventsErr } = await db
+//             .from('events')
+//             .select('*')
+//             .order('created_at', { ascending: false })
+//             .limit(10);
 
-            flapRuleBadge.className = 'badge badge-success';
-            flapRuleBadge.textContent = 'Two-Way Access';
-            flapRuleDesc.textContent = 'Cat can freely exit or enter while supervised.';
+//         if (!eventsErr && initialEvents) {
+//             initialEvents.reverse().forEach(event => handleDetectionEvent(event, false));
+//         }
+//     } catch (err) {
+//         console.error("Failed to fetch initial events:", err);
+//     }
 
-            logEvent('Presence Detected', 'Human entered room. Window opened automatically.');
+//     // 3. Realtime Listener for System Configuration Changes
+//     db.channel('config_updates')
+//         .on(
+//             'postgres_changes',
+//             { event: 'UPDATE', schema: 'public', table: 'system_config', filter: 'id=eq.1' },
+//             (payload) => {
+//                 if (payload.new) {
+//                     currentWindowState = payload.new.window_state;
+//                     currentFlapRule = payload.new.flap_rule;
+//                     renderUI();
+//                     logEvent('Config Updated', `Window: ${currentWindowState.toUpperCase()} | Flap: ${currentFlapRule.toUpperCase()}`);
+//                 }
+//             }
+//         )
+//         .subscribe();
+
+//     // 4. Realtime Listener for AI Detection Alerts (Populates Event Summary Timeline)
+//     db.channel('detection_alerts')
+//         .on(
+//             'postgres_changes',
+//             { event: 'INSERT', schema: 'public', table: 'events' },
+//             (payload) => {
+//                 handleDetectionEvent(payload.new, true);
+//             }
+//         )
+//         .subscribe();
+// }
+
+// // Process Incoming AI Detection Events for the Event Summary
+// function handleDetectionEvent(newEvent, triggerToast = true) {
+//     const eventType = (newEvent.event_type || '').toLowerCase();
+//     const message = newEvent.message || 'Detection trigger received.';
+
+//     const hasHuman = eventType.includes('human') || eventType.includes('person');
+//     const hasCat = eventType.includes('cat');
+//     const hasDog = eventType.includes('dog');
+
+//     let title = "Entity Detected";
+//     let iconClass = "fa-bell";
+
+//     if (hasCat && hasDog && hasHuman) {
+//         title = "Cat, Dog & Human Detected!";
+//         iconClass = "fa-users-viewfinder";
+//     } else if (hasCat && hasDog) {
+//         title = "Cat & Dog Detected!";
+//         iconClass = "fa-shield-dog";
+//     } else if (hasCat && hasHuman) {
+//         title = "Cat & Human Detected!";
+//         iconClass = "fa-person-shelter";
+//     } else if (hasDog && hasHuman) {
+//         title = "Dog & Human Detected!";
+//         iconClass = "fa-person-walking-with-dog";
+//     } else if (hasCat) {
+//         title = "Cat Detected!";
+//         iconClass = "fa-cat";
+//     } else if (hasDog) {
+//         title = "Dog Detected!";
+//         iconClass = "fa-dog";
+//     } else if (hasHuman) {
+//         title = "Human Detected!";
+//         iconClass = "fa-user";
+//     }
+
+//     logEvent(title, message, newEvent.created_at);
+
+//     if (triggerToast) {
+//         showToast(title, message, iconClass);
+//     }
+// }
+
+// // Push system configuration update to Supabase
+// async function pushConfigToSupabase(newWindowState, newFlapRule) {
+//     try {
+//         const { error } = await db
+//             .from('system_config')
+//             .update({ 
+//                 window_state: newWindowState, 
+//                 flap_rule: newFlapRule,
+//                 updated_at: new Date().toISOString()
+//             })
+//             .eq('id', 1);
+
+//         if (error) {
+//             console.error("Failed to write system_config:", error);
+//             showToast("Error", "Could not update state in Supabase.", "fa-triangle-exclamation");
+//         } else {
+//             currentWindowState = newWindowState;
+//             currentFlapRule = newFlapRule;
+//             renderUI();
+//             showToast("State Saved", `Window: ${newWindowState} | Rule: ${newFlapRule}`, "fa-database");
+//         }
+//     } catch (err) {
+//         console.error("Error updating system_config:", err);
+//     }
+// }
+
+// // Render UI based on state variables
+// function renderUI() {
+//     const windowBadge = document.getElementById('window-state-badge');
+//     const windowDesc = document.getElementById('window-status-desc');
+//     const windowBtnIcon = document.getElementById('window-btn-icon');
+//     const windowBtnText = document.getElementById('window-btn-text');
+
+//     const flapBadge = document.getElementById('flap-rule-badge');
+//     const flapDesc = document.getElementById('flap-rule-desc');
+//     const flapBtnIcon = document.getElementById('flap-btn-icon');
+//     const flapBtnText = document.getElementById('flap-btn-text');
+
+//     // Remove spin icon on successful render
+//     if (windowBtnIcon) windowBtnIcon.className = 'fa-solid fa-power-off';
+//     if (flapBtnIcon) flapBtnIcon.className = 'fa-solid fa-sliders';
+
+//     // Update Window Controls UI
+//     if (currentWindowState === 'unlocked') {
+//         if (windowBadge) { windowBadge.className = 'badge badge-success'; windowBadge.textContent = 'Unlocked'; }
+//         if (windowDesc) windowDesc.textContent = 'Window unlocked.';
+//         if (windowBtnText) windowBtnText.textContent = 'Lock Window';
+//     } else {
+//         if (windowBadge) { windowBadge.className = 'badge badge-danger'; windowBadge.textContent = 'Locked'; }
+//         if (windowDesc) windowDesc.textContent = 'Window locked shut.';
+//         if (windowBtnText) windowBtnText.textContent = 'Unlock Window';
+//     }
+
+//     // Update Flap Controls UI
+//     if (flapBadge && flapDesc) {
+//         if (currentFlapRule === 'two_way') {
+//             flapBadge.className = 'badge badge-success';
+//             flapBadge.textContent = 'Two-Way Access';
+//             flapDesc.textContent = 'Inbound & Outbound rules active.';
+//             if (flapBtnText) flapBtnText.textContent = 'Set Inbound Only';
+//         } else if (currentFlapRule === 'outbound_only') {
+//             flapBadge.className = 'badge badge-warning';
+//             flapBadge.textContent = 'Outbound Only';
+//             flapDesc.textContent = 'Pets can exit, but inbound access is locked.';
+//             if (flapBtnText) flapBtnText.textContent = 'Set Two-Way Access';
+//         } else {
+//             flapBadge.className = 'badge badge-info';
+//             flapBadge.textContent = 'Inbound Only';
+//             flapDesc.textContent = 'Pets can enter, but outbound exit is locked.';
+//             if (flapBtnText) flapBtnText.textContent = 'Set Outbound Only';
+//         }
+//     }
+// }
+
+// // Helper Toast Notification
+// function showToast(title, message, iconClass = 'fa-bell') {
+//     const toast = document.getElementById('toast-notification');
+//     const toastTitle = document.getElementById('toast-title');
+//     const toastMsg = document.getElementById('toast-message');
+//     const toastIcon = document.getElementById('toast-icon');
+
+//     if (toast) {
+//         if (toastIcon) toastIcon.className = `fa-solid ${iconClass} toast-icon`;
+//         if (toastTitle) toastTitle.innerText = title;
+//         if (toastMsg) toastMsg.innerText = message;
+//         toast.classList.add('active', 'show');
+
+//         setTimeout(() => toast.classList.remove('active', 'show'), 4000);
+//     }
+// }
+
+// // Global Event Logger to prepend to timeline UI
+// function logEvent(title, detail, timestamp = null) {
+//     const eventTimeline = document.getElementById('event-timeline');
+//     if (!eventTimeline) return;
+
+//     const dateObj = timestamp ? new Date(timestamp) : new Date();
+//     const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+//     const item = document.createElement('div');
+//     item.className = 'timeline-item';
+//     item.innerHTML = `
+//         <span class="timeline-time">${timeStr}</span>
+//         <div class="timeline-content">
+//             <strong>${title}</strong> — ${detail}
+//         </div>
+//     `;
+//     eventTimeline.prepend(item);
+// }
+
+// // WebRTC Stream Handlers
+// async function startWebRTCStream() {
+//     const videoEl = document.getElementById('webrtc-video');
+//     const cameraStatusText = document.getElementById('camera-status-text');
+//     const reconnectIcon = document.getElementById('reconnect-icon');
+
+//     if (!videoEl) return;
+//     if (cameraStatusText) cameraStatusText.innerText = "Connecting to live feed...";
+//     if (reconnectIcon) reconnectIcon.classList.add('fa-spin');
+
+//     if (peerConnection) {
+//         peerConnection.close();
+//         peerConnection = null;
+//     }
+
+//     peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+//     peerConnection.ontrack = (event) => {
+//         videoEl.srcObject = event.streams[0] || new MediaStream([event.track]);
+//         if (cameraStatusText) cameraStatusText.innerText = "Live Stream Connected.";
+//         if (reconnectIcon) reconnectIcon.classList.remove('fa-spin');
+//     };
+
+//     try {
+//         peerConnection.addTransceiver('video', { direction: 'recvonly' });
+//         const offer = await peerConnection.createOffer();
+//         await peerConnection.setLocalDescription(offer);
+
+//         await new Promise((resolve) => {
+//             if (peerConnection.iceGatheringState === 'complete') resolve();
+//             else {
+//                 const check = () => {
+//                     if (peerConnection.iceGatheringState === 'complete') {
+//                         peerConnection.removeEventListener('icegatheringstatechange', check);
+//                         resolve();
+//                     }
+//                 };
+//                 peerConnection.addEventListener('icegatheringstatechange', check);
+//             }
+//         });
+
+//         const response = await fetch(WEBRTC_URL, {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/sdp' },
+//             body: peerConnection.localDescription.sdp
+//         });
+
+//         if (!response.ok) throw new Error(`MediaMTX error: ${response.status}`);
+//         const answerSdp = await response.text();
+//         await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
+//     } catch (err) {
+//         console.error('WebRTC error:', err);
+//         if (cameraStatusText) cameraStatusText.innerText = "Failed to connect to video stream.";
+//         if (reconnectIcon) reconnectIcon.classList.remove('fa-spin');
+//     }
+// }
+
+// // DOM Event Listeners
+// document.addEventListener('DOMContentLoaded', () => {
+//     initSupabase();
+
+//     // Automatically initialize video stream on page load
+//     startWebRTCStream();
+
+//     // Reconnect Stream Button Event Listener
+//     const reconnectStreamBtn = document.getElementById('reconnect-stream-btn');
+//     if (reconnectStreamBtn) {
+//         reconnectStreamBtn.addEventListener('click', () => {
+//             startWebRTCStream();
+//             showToast("Video Feed", "Reconnecting to live camera stream...", "fa-rotate-right");
+//         });
+//     }
+
+//     // Window Toggle Button
+//     const toggleWindowBtn = document.getElementById('toggle-window-btn');
+//     if (toggleWindowBtn) {
+//         toggleWindowBtn.addEventListener('click', () => {
+//             const nextWindowState = (currentWindowState === 'locked') ? 'unlocked' : 'locked';
+//             pushConfigToSupabase(nextWindowState, currentFlapRule);
+//         });
+//     }
+
+//     // Smart Flap Rule Selector Handler (3 State Cycling)
+//     const toggleFlapBtn = document.getElementById('toggle-flap-btn');
+//     if (toggleFlapBtn) {
+//         toggleFlapBtn.addEventListener('click', () => {
+//             let nextRule = 'inbound_only';
+//             if (currentFlapRule === 'inbound_only') nextRule = 'outbound_only';
+//             else if (currentFlapRule === 'outbound_only') nextRule = 'two_way';
+//             else nextRule = 'inbound_only';
+
+//             pushConfigToSupabase(currentWindowState, nextRule);
+//         });
+//     }
+
+//     // Clear Logs Button
+//     const clearLogsBtn = document.getElementById('clear-logs-btn');
+//     if (clearLogsBtn) {
+//         clearLogsBtn.addEventListener('click', () => {
+//             const eventTimeline = document.getElementById('event-timeline');
+//             if (eventTimeline) eventTimeline.innerHTML = '';
+//         });
+//     }
+// });
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://fqvpzvwlkxdeqqkqkjnh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_umgBNG0VuXTNTZAA9qfYbA_-wGYCeSk';
+export const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const WEBRTC_URL = 'http://13.221.52.248:8889/mystream/whep';
+let peerConnection = null;
+
+// Track current states
+let currentWindowState = 'locked';       // 'locked' | 'unlocked'
+let currentFlapRule = 'inbound_only';    // 'inbound_only' | 'outbound_only' | 'two_way'
+
+// Initialize Supabase Listeners & Data Fetch
+async function initSupabase() {
+    try {
+        const { data, error } = await db
+            .from('system_config')
+            .select('*')
+            .eq('id', 1)
+            .single();
+
+        if (!error && data) {
+            currentWindowState = data.window_state;
+            currentFlapRule = data.flap_rule;
+            renderUI();
+        }
+    } catch (err) {
+        console.error("Failed to fetch system_config:", err);
+    }
+
+    try {
+        const { data: initialEvents, error: eventsErr } = await db
+            .from('events')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (!eventsErr && initialEvents) {
+            initialEvents.reverse().forEach(event => handleDetectionEvent(event, false));
+        }
+    } catch (err) {
+        console.error("Failed to fetch initial events:", err);
+    }
+
+    db.channel('config_updates')
+        .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'system_config', filter: 'id=eq.1' },
+            (payload) => {
+                if (payload.new) {
+                    currentWindowState = payload.new.window_state;
+                    currentFlapRule = payload.new.flap_rule;
+                    renderUI();
+                    logEvent('Config Updated', `Window: ${currentWindowState.toUpperCase()} | Flap: ${currentFlapRule.toUpperCase()}`);
+                }
+            }
+        )
+        .subscribe();
+
+    db.channel('detection_alerts')
+        .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'events' },
+            (payload) => {
+                handleDetectionEvent(payload.new, true);
+            }
+        )
+        .subscribe();
+}
+
+function handleDetectionEvent(newEvent, triggerToast = true) {
+    const eventType = (newEvent.event_type || '').toLowerCase();
+    const message = newEvent.message || 'Detection trigger received.';
+
+    const hasHuman = eventType.includes('human') || eventType.includes('person');
+    const hasCat = eventType.includes('cat');
+    const hasDog = eventType.includes('dog');
+
+    let title = "Entity Detected";
+    let iconClass = "fa-bell";
+
+    if (hasCat && hasDog && hasHuman) {
+        title = "Cat, Dog & Human Detected!";
+        iconClass = "fa-users-viewfinder";
+    } else if (hasCat && hasDog) {
+        title = "Cat & Dog Detected!";
+        iconClass = "fa-shield-dog";
+    } else if (hasCat && hasHuman) {
+        title = "Cat & Human Detected!";
+        iconClass = "fa-person-shelter";
+    } else if (hasDog && hasHuman) {
+        title = "Dog & Human Detected!";
+        iconClass = "fa-person-walking-with-dog";
+    } else if (hasCat) {
+        title = "Cat Detected!";
+        iconClass = "fa-cat";
+    } else if (hasDog) {
+        title = "Dog Detected!";
+        iconClass = "fa-dog";
+    } else if (hasHuman) {
+        title = "Human Detected!";
+        iconClass = "fa-user";
+    }
+
+    logEvent(title, message, newEvent.created_at);
+
+    if (triggerToast) {
+        showToast(title, message, iconClass);
+    }
+}
+
+async function pushConfigToSupabase(newWindowState, newFlapRule) {
+    try {
+        const { error } = await db
+            .from('system_config')
+            .update({ 
+                window_state: newWindowState, 
+                flap_rule: newFlapRule,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', 1);
+
+        if (error) {
+            console.error("Failed to write system_config:", error);
+            showToast("Error", "Could not update state in Supabase.", "fa-triangle-exclamation");
         } else {
-            // State B: Human Absent
-            statusCard.className = 'status-card absent';
-            presenceText.textContent = 'No Human Present';
+            currentWindowState = newWindowState;
+            currentFlapRule = newFlapRule;
+            renderUI();
+            showToast("State Saved", `Window: ${newWindowState} | Rule: ${newFlapRule}`, "fa-database");
+        }
+    } catch (err) {
+        console.error("Error updating system_config:", err);
+    }
+}
 
-            modeBadge.className = 'mode-badge badge-info';
-            modeText.textContent = 'Secured / Inbound Only Mode';
+function renderUI() {
+    const windowBadge = document.getElementById('window-state-badge');
+    const windowDesc = document.getElementById('window-status-desc');
+    const windowBtnIcon = document.getElementById('window-btn-icon');
+    const windowBtnText = document.getElementById('window-btn-text');
 
-            // Window locks shut; flap restricts exit
-            isWindowOpen = false;
-            windowStateBadge.className = 'badge badge-danger';
-            windowStateBadge.textContent = 'Locked';
-            windowStatusDesc.textContent = 'Window locked shut to prevent unsupervised exit or pest entry.';
+    const flapBadge = document.getElementById('flap-rule-badge');
+    const flapDesc = document.getElementById('flap-rule-desc');
+    const flapBtnIcon = document.getElementById('flap-btn-icon');
+    const flapBtnText = document.getElementById('flap-btn-text');
 
-            flapRuleBadge.className = 'badge badge-info';
-            flapRuleBadge.textContent = 'Inbound Only';
-            flapRuleDesc.textContent = 'Cat can enter from outside, but exits are locked.';
+    if (windowBtnIcon) windowBtnIcon.className = 'fa-solid fa-power-off';
+    if (flapBtnIcon) flapBtnIcon.className = 'fa-solid fa-sliders';
 
-            logEvent('Presence Cleared', 'Room empty. Window locked; door set to inbound-only.');
+    if (currentWindowState === 'unlocked') {
+        if (windowBadge) { windowBadge.className = 'badge badge-success'; windowBadge.textContent = 'Unlocked'; }
+        if (windowDesc) windowDesc.textContent = 'Window unlocked.';
+        if (windowBtnText) windowBtnText.textContent = 'Lock Window';
+    } else {
+        if (windowBadge) { windowBadge.className = 'badge badge-danger'; windowBadge.textContent = 'Locked'; }
+        if (windowDesc) windowDesc.textContent = 'Window locked shut.';
+        if (windowBtnText) windowBtnText.textContent = 'Unlock Window';
+    }
+
+    if (flapBadge && flapDesc) {
+        if (currentFlapRule === 'two_way') {
+            flapBadge.className = 'badge badge-success';
+            flapBadge.textContent = 'Two-Way Access';
+            flapDesc.textContent = 'Inbound & Outbound rules active.';
+            if (flapBtnText) flapBtnText.textContent = 'Set Inbound Only';
+        } else if (currentFlapRule === 'outbound_only') {
+            flapBadge.className = 'badge badge-warning';
+            flapBadge.textContent = 'Outbound Only';
+            flapDesc.textContent = 'Pets can exit, but inbound access is locked.';
+            if (flapBtnText) flapBtnText.textContent = 'Set Two-Way Access';
+        } else {
+            flapBadge.className = 'badge badge-info';
+            flapBadge.textContent = 'Inbound Only';
+            flapDesc.textContent = 'Pets can enter, but outbound exit is locked.';
+            if (flapBtnText) flapBtnText.textContent = 'Set Outbound Only';
         }
     }
+}
 
-    // Trigger Notification: Cat Waiting Outside
-    simCatWaitingBtn.addEventListener('click', () => {
-        showToast('Cat Detected Outside', 'Your cat is outside the window requesting entry.');
-        logEvent('Cat Waiting', 'Outdoor camera detected cat at the window.');
+function showToast(title, message, iconClass = 'fa-bell') {
+    const toast = document.getElementById('toast-notification');
+    const toastTitle = document.getElementById('toast-title');
+    const toastMsg = document.getElementById('toast-message');
+    const toastIcon = document.getElementById('toast-icon');
 
-        // If cat enters while room is unmonitored
-        if (!isHumanPresent) {
-            setTimeout(() => {
-                logEvent('Cat Entered', 'Cat entered through inbound-only door flap. Exit remains locked.');
-            }, 3000);
+    if (toast) {
+        if (toastIcon) toastIcon.className = `fa-solid ${iconClass} toast-icon`;
+        if (toastTitle) toastTitle.innerText = title;
+        if (toastMsg) toastMsg.innerText = message;
+        toast.classList.add('active', 'show');
+
+        setTimeout(() => toast.classList.remove('active', 'show'), 4000);
+    }
+}
+
+function logEvent(title, detail, timestamp = null) {
+    const eventTimeline = document.getElementById('event-timeline');
+    if (!eventTimeline) return;
+
+    const dateObj = timestamp ? new Date(timestamp) : new Date();
+    const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    item.innerHTML = `
+        <span class="timeline-time">${timeStr}</span>
+        <div class="timeline-content">
+            <strong>${title}</strong> — ${detail}
+        </div>
+    `;
+    eventTimeline.prepend(item);
+}
+
+// Fixed WebRTC Stream Handler
+async function startWebRTCStream() {
+    const videoEl = document.getElementById('webrtc-video');
+    const cameraStatusText = document.getElementById('camera-status-text');
+    const reconnectIcon = document.getElementById('reconnect-icon');
+
+    if (!videoEl) return;
+    if (cameraStatusText) cameraStatusText.innerText = "Connecting to live feed...";
+    if (reconnectIcon) reconnectIcon.classList.add('fa-spin');
+
+    // Ensure Video Element is explicitly muted (Browsers block autoplay otherwise)
+    videoEl.muted = true;
+
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+
+    peerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    // Handle Incoming Tracks
+    peerConnection.ontrack = (event) => {
+        console.log("WebRTC track received:", event.track.kind);
+        if (event.streams && event.streams[0]) {
+            videoEl.srcObject = event.streams[0];
+        } else {
+            const inboundStream = new MediaStream([event.track]);
+            videoEl.srcObject = inboundStream;
         }
-    });
 
-    // Helper: Toast Notification
-    function showToast(title, message) {
-        document.getElementById('toast-title').textContent = title;
-        document.getElementById('toast-message').textContent = message;
-        toastNotification.classList.add('active');
+        // Force browser play
+        videoEl.play().then(() => {
+            if (cameraStatusText) cameraStatusText.innerText = "Live Stream Connected.";
+            if (reconnectIcon) reconnectIcon.classList.remove('fa-spin');
+        }).catch(err => {
+            console.error("Autoplay play() error:", err);
+            if (cameraStatusText) cameraStatusText.innerText = "Click video player to unblock video autoplay.";
+        });
+    };
 
-        setTimeout(() => {
-            toastNotification.classList.remove('active');
-        }, 4000);
+    try {
+        peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
+        // Wait for ICE gathering to complete or timeout after 2 seconds
+        await Promise.race([
+            new Promise(resolve => {
+                if (peerConnection.iceGatheringState === 'complete') resolve();
+                else {
+                    const check = () => {
+                        if (peerConnection.iceGatheringState === 'complete') {
+                            peerConnection.removeEventListener('icegatheringstatechange', check);
+                            resolve();
+                        }
+                    };
+                    peerConnection.addEventListener('icegatheringstatechange', check);
+                }
+            }),
+            new Promise(resolve => setTimeout(resolve, 2000))
+        ]);
+
+        const response = await fetch(WEBRTC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/sdp' },
+            body: peerConnection.localDescription.sdp
+        });
+
+        if (!response.ok) {
+            throw new Error(`MediaMTX responded with HTTP status ${response.status}`);
+        }
+
+        const answerSdp = await response.text();
+        await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
+
+    } catch (err) {
+        console.error('WebRTC streaming failed:', err);
+        if (cameraStatusText) cameraStatusText.innerText = `Stream Error: ${err.message}`;
+        if (reconnectIcon) reconnectIcon.classList.remove('fa-spin');
+    }
+}
+
+// DOM Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    initSupabase();
+
+    // Start Stream
+    startWebRTCStream();
+
+    // User interaction click to unblock autoplay if needed
+    const videoEl = document.getElementById('webrtc-video');
+    if (videoEl) {
+        videoEl.addEventListener('click', () => {
+            videoEl.play();
+        });
     }
 
-    // Helper: Event Logger
-    function logEvent(title, detail) {
-        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const item = document.createElement('div');
-        item.className = 'timeline-item';
-        item.innerHTML = `
-            <span class="timeline-time">${timeStr}</span>
-            <div class="timeline-content">
-                <strong>${title}</strong> — ${detail}
-            </div>
-        `;
-        eventTimeline.prepend(item);
+    const reconnectStreamBtn = document.getElementById('reconnect-stream-btn');
+    if (reconnectStreamBtn) {
+        reconnectStreamBtn.addEventListener('click', () => {
+            startWebRTCStream();
+            showToast("Video Feed", "Reconnecting to live camera stream...", "fa-rotate-right");
+        });
     }
 
-    // Clear Logs
-    clearLogsBtn.addEventListener('click', () => {
-        eventTimeline.innerHTML = '';
-    });
+    const toggleWindowBtn = document.getElementById('toggle-window-btn');
+    if (toggleWindowBtn) {
+        toggleWindowBtn.addEventListener('click', () => {
+            const nextWindowState = (currentWindowState === 'locked') ? 'unlocked' : 'locked';
+            pushConfigToSupabase(nextWindowState, currentFlapRule);
+        });
+    }
 
-    // Camera Modal Handlers
-    toggleCameraBtn.addEventListener('click', () => cameraModal.classList.add('active'));
-    closeModalBtn.addEventListener('click', () => cameraModal.classList.remove('active'));
-    cameraModal.addEventListener('click', (e) => {
-        if (e.target === cameraModal) cameraModal.classList.remove('active');
-    });
+    const toggleFlapBtn = document.getElementById('toggle-flap-btn');
+    if (toggleFlapBtn) {
+        toggleFlapBtn.addEventListener('click', () => {
+            let nextRule = 'inbound_only';
+            if (currentFlapRule === 'inbound_only') nextRule = 'outbound_only';
+            else if (currentFlapRule === 'outbound_only') nextRule = 'two_way';
+            else nextRule = 'inbound_only';
+
+            pushConfigToSupabase(currentWindowState, nextRule);
+        });
+    }
+
+    const clearLogsBtn = document.getElementById('clear-logs-btn');
+    if (clearLogsBtn) {
+        clearLogsBtn.addEventListener('click', () => {
+            const eventTimeline = document.getElementById('event-timeline');
+            if (eventTimeline) eventTimeline.innerHTML = '';
+        });
+    }
 });
