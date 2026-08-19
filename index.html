@@ -212,7 +212,7 @@
         window.client = await auth0.createAuth0Client({
           domain: 'dev-25q43tptmnnioz0m.us.auth0.com',
           clientId: 'MhTa6Tn8dbOsuVgus0NsPtYrb0qcbDnK',
-          authorizationParams: { redirect_uri: window.location.origin + "/dashboard.html" },
+          authorizationParams: { redirect_uri: new URL('dashboard.html', window.location.href).href },
         });
 
         if (location.search.includes("error=")) {
