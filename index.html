@@ -1,106 +1,240 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Watcher Hub</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Watcher Hub - Login</title>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --card-border: #2a2a2a;
+      --text-main: #f0f0f0;
+      --text-muted: #888888;
+      --primary-blue: #007bff;
+      --primary-blue-hover: #0056b3;
+      --accent-green: #28a745;
+      --accent-green-hover: #218838;
+      --accent-red: #dc3545;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* Container matching Dashboard theme */
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* Header Brand matching Dashboard */
+    .brand-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .brand-header .brand-icon {
+      font-size: 2.5rem;
+      color: var(--primary-blue);
+      margin-bottom: 0.5rem;
+    }
+
+    .brand-header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-header h1 span {
+      color: var(--primary-blue);
+    }
+
+    /* Card Layout matching .card class from dashboard */
+    .auth-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      text-align: center;
+    }
+
+    .auth-card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .auth-card p.subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Dashboard Buttons & Badges styling */
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-blue-hover);
+    }
+
+    .btn-secondary {
+      background-color: #2c2c2c;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background-color: #383838;
+    }
+
+    /* Error & Loading States */
+    .status-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 1rem 0;
+      color: var(--text-muted);
+    }
+
+    .error-box {
+      background-color: rgba(220, 53, 69, 0.15);
+      border: 1px solid var(--accent-red);
+      color: #ff6b6b;
+      padding: 0.85rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="brand">
-                <i class="fa-solid fa-shield-cat brand-icon"></i>
-                <h1>Watcher <span>Hub</span></h1>
-            </div>
-            <div id="connection-status" class="badge badge-success">
-                <i class="fa-solid fa-signal"></i> Connected
-            </div>
-        </header>
 
-        <!-- Main Dashboard Grid -->
-        <main class="dashboard-grid">
-            
-            <!-- Main Live Video Feed -->
-            <section class="card video-card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <h2><i class="fa-solid fa-video"></i> Live Feed</h2>
-                        <span class="badge badge-danger" id="live-indicator"><i class="fa-solid fa-circle"></i> LIVE</span>
-                    </div>
-                    <!-- Reconnect Video Button -->
-                    <button id="reconnect-stream-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-rotate-right" id="reconnect-icon"></i>
-                        <span>Reconnect</span>
-                    </button>
-                </div>
-                <div class="video-container" style="position: relative; width: 100%; min-height: 280px; background-color: #000; border-radius: 8px; overflow: hidden;">
-                    <video id="webrtc-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain; display: block;"></video>
-                </div>
-                <div class="video-footer" style="margin-top: 8px;">
-                    <p id="camera-status-text" style="font-size: 0.85rem; color: #888;">Connecting to camera stream...</p>
-                </div>
-            </section>
-
-            <!-- Hardware & Window Controls -->
-            <section class="card control-card">
-                <h2><i class="fa-solid fa-sliders"></i> System Controls</h2>
-                
-                <!-- Window State Control -->
-                <div class="control-item" style="margin-bottom: 20px;">
-                    <div class="control-info">
-                        <h3>Window</h3>
-                        <p id="window-status-desc">Fetching state...</p>
-                    </div>
-                    <div class="control-action" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
-                        <button id="toggle-window-btn" class="btn btn-secondary">
-                            <i class="fa-solid fa-spinner fa-spin" id="window-btn-icon"></i> 
-                            <span id="window-btn-text">Loading...</span>
-                        </button>
-                        <span class="badge" id="window-state-badge">...</span>
-                    </div>
-                </div>
-
-                <!-- Smart Flap Rule Control -->
-                <div class="control-item">
-                    <div class="control-info">
-                        <h3>Smart Flap Rule</h3>
-                        <p id="flap-rule-desc">Fetching rules...</p>
-                    </div>
-                    <div class="control-action" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
-                        <button id="toggle-flap-btn" class="btn btn-secondary">
-                            <i class="fa-solid fa-spinner fa-spin" id="flap-btn-icon"></i> 
-                            <span id="flap-btn-text">Loading...</span>
-                        </button>
-                        <span class="badge badge-info" id="flap-rule-badge">...</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Event Summary / Activity Log -->
-            <section class="card events-card">
-                <div class="card-header">
-                    <h2><i class="fa-solid fa-list-check"></i> Event Summary</h2>
-                    <button id="clear-logs-btn" class="btn-text">Clear</button>
-                </div>
-                <div class="event-timeline" id="event-timeline">
-                    <!-- Events dynamically inserted via JavaScript -->
-                </div>
-            </section>
-        </main>
-
-        <!-- Toast Notification Alert -->
-        <div class="toast-notification" id="toast-notification">
-            <i id="toast-icon" class="fa-solid fa-bell toast-icon"></i>
-            <div class="toast-body">
-                <strong id="toast-title">Detection Alert</strong>
-                <p id="toast-message">New activity detected near window.</p>
-            </div>
-        </div>
+  <div class="login-container">
+    <!-- Watcher Hub Header Brand -->
+    <div class="brand-header">
+      <i class="fa-solid fa-shield-cat brand-icon"></i>
+      <h1>Watcher <span>Hub</span></h1>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <!-- Main Auth Card -->
+    <div class="auth-card">
+      
+      <!-- Loading View -->
+      <div id="view-loading" class="status-box">
+        <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary-blue);"></i>
+        <p>Connecting to Auth0...</p>
+      </div>
+
+      <!-- Error View -->
+      <div id="view-error" class="error-box" hidden></div>
+
+      <!-- Actions View -->
+      <div id="view-unauthenticated" hidden>
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Log in to access your video stream & hardware controls</p>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="client.loginWithRedirect()">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+          </button>
+          
+          <button class="btn btn-secondary" onclick="client.loginWithRedirect({authorizationParams:{screen_hint:'signup'}})">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Auth0 SPA SDK -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.18/auth0-spa-js.production.js"></script>
+
+  <script>
+    const displayView = name => ['loading', 'error', 'unauthenticated'].forEach(v => {
+      const el = document.getElementById(`view-${v}`);
+      if (el) el.hidden = v !== name;
+    });
+
+    const setTextContent = (id, content) => document.getElementById(id).textContent = content;
+
+    (async () => {
+      try {
+        window.client = await auth0.createAuth0Client({
+          domain: 'dev-25q43tptmnnioz0m.us.auth0.com',
+          clientId: 'MhTa6Tn8dbOsuVgus0NsPtYrb0qcbDnK',
+          authorizationParams: { redirect_uri: window.location.origin + "/dashboard.html" },
+        });
+
+        if (location.search.includes("error=")) {
+          const params = new URLSearchParams(location.search);
+          setTextContent("view-error", `Error: ${params.get("error")} — ${params.get("error_description")}`);
+          displayView("error");
+          history.replaceState({}, "", location.pathname);
+          return;
+        }
+
+        if (await window.client.isAuthenticated()) {
+          window.location.href = window.location.origin + "/dashboard.html";
+          return;
+        }
+
+        displayView("unauthenticated");
+      } catch (err) {
+        console.error("Auth0 initialization error:", err);
+        setTextContent("view-error", "Failed to connect to authentication services.");
+        displayView("error");
+      }
+    })();
+  </script>
 </body>
 </html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watcher Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Auth Loading Screen to prevent content flashing -->
+    <div id="auth-loading" style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212; color: #fff; font-family: sans-serif;">
+        <div style="text-align: center;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 1rem;">Authenticating session...</p>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-content" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <i class="fa-solid fa-shield-cat brand-icon"></i>
+                <h1>Watcher <span>Hub</span></h1>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="connection-status" class="badge badge-success">
+                    <i class="fa-solid fa-signal"></i> Connected
+                </div>
+                <!-- User Profile & Logout -->
+                <span id="user-email" style="font-size: 0.85rem; opacity: 0.8;"></span>
+                <button id="logout-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Grid -->
+        <main class="dashboard-grid">
+            
+            <!-- Main Live Video Feed -->
+            <section class="card video-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2><i class="fa-solid fa-video"></i> Live Feed</h2>
+                        <span class="badge badge-danger" id="live-indicator"><i class="fa-solid fa-circle"></i> LIVE</span>
+                    </div>
+                    <!-- Reconnect Video Button -->
+                    <button id="reconnect-stream-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-rotate-right" id="reconnect-icon"></i>
+                        <span>Reconnect</span>
+                    </button>
+                </div>
+                <div class="video-container" style="position: relative; width: 100%; min-height: 280px; background-color: #000; border-radius: 8px; overflow: hidden;">
+                    <video id="webrtc-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: contain; display: block;"></video>
+                </div>
+                <div class="video-footer" style="margin-top: 8px;">
+                    <p id="camera-status-text" style="font-size: 0.85rem; color: #888;">Connecting to camera stream...</p>
+                </div>
+            </section>
+
+            <!-- Hardware & Window Controls -->
+            <section class="card control-card">
+                <h2><i class="fa-solid fa-sliders"></i> System Controls</h2>
+                
+                <!-- Window State Control -->
+                <div class="control-item" style="margin-bottom: 20px;">
+                    <div class="control-info">
+                        <h3>Window</h3>
+                        <p id="window-status-desc">Fetching state...</p>
+                    </div>
+                    <div class="control-action" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                        <button id="toggle-window-btn" class="btn btn-secondary">
+                            <i class="fa-solid fa-spinner fa-spin" id="window-btn-icon"></i> 
+                            <span id="window-btn-text">Loading...</span>
+                        </button>
+                        <span class="badge" id="window-state-badge">...</span>
+                    </div>
+                </div>
+
+                <!-- Smart Flap Rule Control -->
+                <div class="control-item">
+                    <div class="control-info">
+                        <h3>Smart Flap Rule</h3>
+                        <p id="flap-rule-desc">Fetching rules...</p>
+                    </div>
+                    <div class="control-action" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                        <button id="toggle-flap-btn" class="btn btn-secondary">
+                            <i class="fa-solid fa-spinner fa-spin" id="flap-btn-icon"></i> 
+                            <span id="flap-btn-text">Loading...</span>
+                        </button>
+                        <span class="badge badge-info" id="flap-rule-badge">...</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Event Summary / Activity Log -->
+            <section class="card events-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-list-check"></i> Event Summary</h2>
+                    <button id="clear-logs-btn" class="btn-text">Clear</button>
+                </div>
+                <div class="event-timeline" id="event-timeline">
+                    <!-- Events dynamically inserted via JavaScript -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Toast Notification Alert -->
+        <div class="toast-notification" id="toast-notification">
+            <i id="toast-icon" class="fa-solid fa-bell toast-icon"></i>
+            <div class="toast-body">
+                <strong id="toast-title">Detection Alert</strong>
+                <p id="toast-message">New activity detected near window.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth0 SPA SDK -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.18/auth0-spa-js.production.js"></script>
+
+    <!-- Auth Guard Script -->
+    <script>
+      (async () => {
+        try {
+          window.client = await auth0.createAuth0Client({
+            domain: 'dev-25q43tptmnnioz0m.us.auth0.com',
+            clientId: 'MhTa6Tn8dbOsuVgus0NsPtYrb0qcbDnK',
+            authorizationParams: { redirect_uri: window.location.origin + "/dashboard.html" },
+          });
+
+          // Process authorization callback token from Auth0 URL parameters
+          if (location.search.includes("code=") && location.search.includes("state=")) {
+            await window.client.handleRedirectCallback();
+            history.replaceState({}, "", location.pathname);
+          }
+
+          // Check authentication state
+          if (await window.client.isAuthenticated()) {
+            const user = await window.client.getUser();
+            
+            // Populate email if element exists
+            const userEmailEl = document.getElementById("user-email");
+            if (userEmailEl) userEmailEl.textContent = user.email;
+
+            // Bind logout button
+            const logoutBtn = document.getElementById("logout-btn");
+            if (logoutBtn) {
+              logoutBtn.addEventListener("click", () => {
+                window.client.logout({ logoutParams: { returnTo: window.location.origin + "/index.html" } });
+              });
+            }
+
+            // Reveal dashboard content and remove loading state
+            document.getElementById("auth-loading").style.display = "none";
+            document.getElementById("app-content").style.display = "block";
+            return;
+          }
+
+          // Unauthenticated: Bounce back to login page
+          window.location.href = window.location.origin + "/index.html";
+
+        } catch (err) {
+          console.error("Authentication Error:", err);
+          window.location.href = window.location.origin + "/index.html";
+        }
+      })();
+    </script>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
