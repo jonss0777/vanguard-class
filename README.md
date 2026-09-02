@@ -1,13 +1,16 @@
 # Watcher
-### What is watcher?
+**What is watcher?**
 
 Is a monitoring system for cats with a remote locking system. 
 
 <img src="https://github.com/jonss0777/watcher/blob/7608bfdbc26c31faa178871b44ce6017a7d513b2/assets/Login-page.png" width="500" height="300">
 <img src="https://github.com/jonss0777/watcher/blob/7608bfdbc26c31faa178871b44ce6017a7d513b2/assets/Dashboard.png" width="500" height="300">
 <img src="https://github.com/jonss0777/watcher/blob/561fb2617dd6d24c01e77babd59953f5663c4c9c/assets/watcher_device.jpg" widht="500" height="300">
-### Use cases:
 
+### Use cases:
+- Place the device in a window to prevent  your cat from entering if he/she has a mouse on his mouth.
+- Allow your cat to leave the room only when you are present.
+- Be notified when your cat comes back home.
 
 
 ## Arquitecture:
