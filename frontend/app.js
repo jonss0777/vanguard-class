@@ -1,10 +1,10 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const SUPABASE_URL = 'https://fqvpzvwlkxdeqqkqkjnh.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_umgBNG0VuXTNTZAA9qfYbA_-wGYCeSk';
+const SUPABASE_URL = '';
+const SUPABASE_KEY = '';
 export const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const WEBRTC_URL = 'http://3.82.112.245:8889/mystream/whep';
+const WEBRTC_URL = 'MEDIAMTX_ENDPOINT';
 let peerConnection = null;
 
 // Track current states
